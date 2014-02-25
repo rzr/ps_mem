@@ -229,7 +229,10 @@ def getMemStats(pid):
         if have_pss:
             pss_adjust = 0.5 # add 0.5KiB as this avg error due to trunctation
             Pss = sum([float(line.split()[1])+pss_adjust for line in Pss_lines])
-            Shared = Pss - Private
+            if Private < Pss:
+               Shared = Pss - Private
+
+
     elif (2,6,1) <= kernel_ver() <= (2,6,9):
         Shared = 0 #lots of overestimation, but what can we do?
         Private = Rss
