@@ -23,7 +23,7 @@ Example output:
 272.2 MiB +  43.9 MiB = 316.1 MiB       chrome (12)
 913.9 MiB +   3.2 MiB = 917.1 MiB       thunderbird
 ---------------------------------
-                          1.9 GiB
+  1.6 GiB +  52.9 MiB =   1.9 GiB
 =================================
 ```
 
