@@ -397,6 +397,8 @@ def get_memory_usage( pids_to_show, split_args, include_self=False, only_self=Fa
 
     #Add shared mem for each program
     total = 0
+    total_private = 0
+    total_share = 0
     for cmd in cmds:
         cmd_count = count[cmd]
         if len(mem_ids[cmd]) == 1 and cmd_count > 1:
@@ -405,26 +407,32 @@ def get_memory_usage( pids_to_show, split_args, include_self=False, only_self=Fa
             cmds[cmd] /= cmd_count
             if have_pss:
                 shareds[cmd] /= cmd_count
+        total_private +=cmds[cmd]
+        total_share += shareds[cmd]
         cmds[cmd] = cmds[cmd] + shareds[cmd]
         total += cmds[cmd] #valid if PSS available
 
     sorted_cmds = sorted(cmds.items(), key=lambda x:x[1])
     sorted_cmds = [x for x in sorted_cmds if x[1]]
 
-    return sorted_cmds, shareds, count, total
+    totals=[total_private,total_share,total]
+    return sorted_cmds, shareds, count, totals
 
 def print_header():
     sys.stdout.write(" Private  +   Shared  =  RAM used\tProgram\n\n")
 
-def print_memory_usage(sorted_cmds, shareds, count, total):
+def print_memory_usage(sorted_cmds, shareds, count, totals):
+    [total_private,total_share,total]=totals
     for cmd in sorted_cmds:
         sys.stdout.write("%8sB + %8sB = %8sB\t%s\n" %
                          (human(cmd[1]-shareds[cmd[0]]),
                           human(shareds[cmd[0]]), human(cmd[1]),
                           cmd_with_count(cmd[0], count[cmd[0]])))
     if have_pss:
-        sys.stdout.write("%s\n%s%8sB\n%s\n" %
-                         ("-" * 33, " " * 24, human(total), "=" * 33))
+        sys.stdout.write("%s\n" % ("-" * 33))
+        sys.stdout.write("%8sB + %8sB = %8sB\n" %
+                         ( human(total_private),human(total_share),human(total)))
+        sys.stdout.write("%s\n" % ("=" * 33))
 
 def verify_environment():
     if os.geteuid() != 0:
@@ -455,8 +463,8 @@ if __name__ == '__main__':
         try:
             sorted_cmds = True
             while sorted_cmds:
-                sorted_cmds, shareds, count, total = get_memory_usage( pids_to_show, split_args )
-                print_memory_usage(sorted_cmds, shareds, count, total)
+                sorted_cmds, shareds, count, totals = get_memory_usage( pids_to_show, split_args )
+                print_memory_usage(sorted_cmds, shareds, count, totals)
                 time.sleep(watch)
             else:
                 sys.stdout.write('Process does not exist anymore.\n')
@@ -464,8 +472,8 @@ if __name__ == '__main__':
             pass
     else:
         # This is the default behavior
-        sorted_cmds, shareds, count, total = get_memory_usage( pids_to_show, split_args )
-        print_memory_usage(sorted_cmds, shareds, count, total)
+        sorted_cmds, shareds, count, totals = get_memory_usage( pids_to_show, split_args )
+        print_memory_usage(sorted_cmds, shareds, count, totals)
 
 
     # We must close explicitly, so that any EPIPE exception
